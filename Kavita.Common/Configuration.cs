@@ -60,6 +60,13 @@ public static class Configuration
         set => SetOpenIdConnectSettings(GetAppSettingFilename(), value);
     }
 
+    /// <remarks>You must set this object to update the settings, setting one if it's fields will not save to disk</remarks>
+    public static DatabaseConfiguration DatabaseSettings
+    {
+        get => GetDatabaseSettings(GetAppSettingFilename());
+        set => SetDatabaseSettings(GetAppSettingFilename(), value);
+    }
+
     public static bool AllowIFraming => GetAllowIFraming(GetAppSettingFilename());
 
     private static string GetAppSettingFilename()
@@ -359,6 +366,43 @@ public static class Configuration
 
     #endregion
 
+    #region Database
+
+    private static DatabaseConfiguration GetDatabaseSettings(string filePath)
+    {
+        try
+        {
+            var json = File.ReadAllText(filePath);
+            var jsonObj = JsonSerializer.Deserialize<AppSettings>(json);
+
+            return jsonObj.DatabaseSettings ?? new DatabaseConfiguration();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error reading app settings: " + ex.Message);
+        }
+
+        return new DatabaseConfiguration();
+    }
+
+    private static void SetDatabaseSettings(string filePath, DatabaseConfiguration value)
+    {
+        try
+        {
+            var json = File.ReadAllText(filePath);
+            var jsonObj = JsonSerializer.Deserialize<AppSettings>(json);
+            jsonObj.DatabaseSettings = value;
+            json = JsonSerializer.Serialize(jsonObj, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(filePath, json);
+        }
+        catch (Exception)
+        {
+            /* Swallow exception */
+        }
+    }
+
+    #endregion
+
     private sealed class AppSettings
     {
         public string TokenKey { get; set; }
@@ -374,6 +418,7 @@ public static class Configuration
         // ReSharper disable once MemberHidesStaticFromOuterClass
         public bool AllowIFraming { get; init; } = false;
         public OpenIdConnectSettings OpenIdConnectSettings { get; set; } = new();
+        public DatabaseConfiguration DatabaseSettings { get; set; } = new();
 #pragma warning restore S3218
     }
 
@@ -388,5 +433,29 @@ public static class Configuration
             !string.IsNullOrEmpty(Authority) &&
             !string.IsNullOrEmpty(ClientId) &&
             !string.IsNullOrEmpty(Secret);
+    }
+
+    public class DatabaseConfiguration
+    {
+        /// <summary>
+        /// Database provider: "Sqlite" or "PostgreSQL"
+        /// </summary>
+        public string Provider { get; set; } = "Sqlite";
+        
+        /// <summary>
+        /// Connection string for PostgreSQL. Ignored if Provider is Sqlite.
+        /// Example: "Host=localhost;Database=kavita;Username=kavita;Password=yourpassword"
+        /// </summary>
+        public string ConnectionString { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Enable detailed database errors in logs
+        /// </summary>
+        public bool EnableDetailedErrors { get; set; } = true;
+        
+        /// <summary>
+        /// Enable sensitive data logging (includes parameter values in logs)
+        /// </summary>
+        public bool EnableSensitiveDataLogging { get; set; } = true;
     }
 }
