@@ -73,8 +73,11 @@ public class Program
 
                 var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
                 var isDbCreated = await context.Database.CanConnectAsync();
-                if (isDbCreated && pendingMigrations.Any())
+                var isSqlite = context.Database.IsSqlite();
+                
+                if (isDbCreated && pendingMigrations.Any() && isSqlite)
                 {
+                    // Only backup SQLite databases - PostgreSQL should be backed up externally
                     logger.LogInformation("Performing backup as migrations are needed. Backup will be kavita.db in temp folder");
                     var migrationDirectory = await GetMigrationDirectory(context, directoryService);
                     directoryService.ExistOrCreate(migrationDirectory);
@@ -85,6 +88,10 @@ public class Program
                         directoryService.CopyFileToDirectory(directoryService.FileSystem.Path.Join(directoryService.ConfigDirectory, "kavita.db"), migrationDirectory);
                         logger.LogInformation("Database backed up to {MigrationDirectory}", migrationDirectory);
                     }
+                }
+                else if (isDbCreated && pendingMigrations.Any() && !isSqlite)
+                {
+                    logger.LogWarning("Migrations pending for PostgreSQL database. Please ensure you have a proper backup before proceeding.");
                 }
 
                 // Apply Before manual migrations that need to run before actual migrations
@@ -136,10 +143,18 @@ public class Program
             {
                 var logger = services.GetRequiredService<ILogger<Program>>();
                 var context = services.GetRequiredService<DataContext>();
-                var migrationDirectory = await GetMigrationDirectory(context, directoryService);
-
-                logger.LogCritical(ex, "A migration failed during startup. Restoring backup from {MigrationDirectory} and exiting", migrationDirectory);
-                directoryService.CopyFileToDirectory(directoryService.FileSystem.Path.Join(migrationDirectory, "kavita.db"), directoryService.ConfigDirectory);
+                var isSqlite = context.Database.IsSqlite();
+                
+                if (isSqlite)
+                {
+                    var migrationDirectory = await GetMigrationDirectory(context, directoryService);
+                    logger.LogCritical(ex, "A migration failed during startup. Restoring backup from {MigrationDirectory} and exiting", migrationDirectory);
+                    directoryService.CopyFileToDirectory(directoryService.FileSystem.Path.Join(migrationDirectory, "kavita.db"), directoryService.ConfigDirectory);
+                }
+                else
+                {
+                    logger.LogCritical(ex, "A migration failed during startup. Please restore your PostgreSQL database from a backup and try again.");
+                }
 
                 return;
             }

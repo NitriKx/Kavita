@@ -94,7 +94,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<OpdsActionFilterAttribute>();
         services.AddScoped<OpdsActiveUserMiddlewareAttribute>();
 
-        services.AddSqLite();
+        services.AddDatabase(config);
         services.AddSignalR(opt => opt.EnableDetailedErrors = true);
 
         services.AddEasyCaching(options =>
@@ -126,16 +126,47 @@ public static class ApplicationServiceExtensions
         });
     }
 
-    private static void AddSqLite(this IServiceCollection services)
+    private static void AddDatabase(this IServiceCollection services, IConfiguration config)
     {
+        var dbSettings = Configuration.DatabaseSettings;
+        var provider = dbSettings?.Provider?.ToLowerInvariant() ?? "sqlite";
+
         services.AddDbContextPool<DataContext>(options =>
         {
-            options.UseSqlite("Data source=config/kavita.db", builder =>
+            // Configure based on provider
+            if (provider == "postgresql")
             {
-                builder.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-            });
-            options.EnableDetailedErrors();
-            options.EnableSensitiveDataLogging();
+                var connectionString = dbSettings?.ConnectionString;
+                if (string.IsNullOrEmpty(connectionString))
+                {
+                    throw new KavitaException("PostgreSQL connection string is required when Provider is set to 'PostgreSQL'. Please configure DatabaseSettings.ConnectionString in appsettings.json");
+                }
+
+                options.UseNpgsql(connectionString, builder =>
+                {
+                    builder.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                    builder.MigrationsAssembly("API");
+                });
+            }
+            else // Default to SQLite
+            {
+                options.UseSqlite("Data source=config/kavita.db", builder =>
+                {
+                    builder.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                });
+            }
+
+            // Common options
+            if (dbSettings?.EnableDetailedErrors ?? true)
+            {
+                options.EnableDetailedErrors();
+            }
+            
+            if (dbSettings?.EnableSensitiveDataLogging ?? true)
+            {
+                options.EnableSensitiveDataLogging();
+            }
+            
             options.ConfigureWarnings(warnings =>
                 warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
         });

@@ -269,28 +269,23 @@ public sealed class DataContext : IdentityDbContext<AppUser, AppRole, int,
 
         builder.Entity<AppUserReadingProfile>()
             .Property(rp => rp.LibraryIds)
-            .HasJsonConversion([])
-            .HasColumnType("TEXT");
+            .HasJsonConversion([]);
         builder.Entity<AppUserReadingProfile>()
             .Property(rp => rp.SeriesIds)
-            .HasJsonConversion([])
-            .HasColumnType("TEXT");
+            .HasJsonConversion([]);
 
         builder.Entity<SeriesMetadata>()
             .Property(sm => sm.KPlusOverrides)
             .HasJsonConversion([])
-            .HasColumnType("TEXT")
             .HasDefaultValue(new List<MetadataSettingField>());
         builder.Entity<Chapter>()
             .Property(sm => sm.KPlusOverrides)
             .HasJsonConversion([])
-            .HasColumnType("TEXT")
             .HasDefaultValue(new List<MetadataSettingField>());
 
         builder.Entity<AppUserPreferences>()
             .Property(a => a.BookReaderHighlightSlots)
             .HasJsonConversion([])
-            .HasColumnType("TEXT")
             .HasDefaultValue(new List<HighlightSlot>());
 
         builder.Entity<AppUser>()
@@ -300,13 +295,11 @@ public sealed class DataContext : IdentityDbContext<AppUser, AppRole, int,
         builder.Entity<AppUserPreferences>()
             .Property(a => a.SocialPreferences)
             .HasJsonConversion(new AppUserSocialPreferences())
-            .HasColumnType("TEXT")
             .HasDefaultValue(new AppUserSocialPreferences());
 
         builder.Entity<AppUserAnnotation>()
             .Property(a => a.Likes)
             .HasJsonConversion(new HashSet<int>())
-            .HasColumnType("TEXT")
             .HasDefaultValue(new HashSet<int>());
     }
 
