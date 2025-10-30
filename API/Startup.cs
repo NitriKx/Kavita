@@ -238,6 +238,11 @@ public class Startup
                     // Apply all migrations on startup
                     var dataContext = serviceProvider.GetRequiredService<DataContext>();
 
+                    // Log the database provider being used
+                    var dbProvider = dataContext.Database.ProviderName;
+                    var dbType = dbProvider?.Contains("Npgsql") == true ? "PostgreSQL" : "SQLite";
+                    logger.LogInformation("Database Provider: {DbProvider} ({DbType})", dbProvider, dbType);
+
                     logger.LogInformation("Running Migrations");
 
                     #region Migrations

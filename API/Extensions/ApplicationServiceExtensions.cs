@@ -1,4 +1,5 @@
-﻿using System.IO.Abstractions;
+﻿using System;
+using System.IO.Abstractions;
 using API.Constants;
 using API.Controllers;
 using API.Data;
@@ -131,6 +132,12 @@ public static class ApplicationServiceExtensions
         var dbSettings = Configuration.DatabaseSettings;
         var provider = dbSettings?.Provider?.ToLowerInvariant() ?? "sqlite";
 
+        // Log the database provider being used
+        var logMessage = provider == "postgresql" 
+            ? "Configuring database: PostgreSQL" 
+            : "Configuring database: SQLite (default)";
+        Console.WriteLine($"[Database] {logMessage}");
+
         services.AddDbContextPool<DataContext>(options =>
         {
             // Configure based on provider
@@ -142,14 +149,20 @@ public static class ApplicationServiceExtensions
                     throw new KavitaException("PostgreSQL connection string is required when Provider is set to 'PostgreSQL'. Please configure DatabaseSettings.ConnectionString in appsettings.json");
                 }
 
+                Console.WriteLine("[Database] Using PostgreSQL with connection string (host hidden for security)");
+                
                 options.UseNpgsql(connectionString, builder =>
                 {
                     builder.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
                     builder.MigrationsAssembly("API");
                 });
+                
+                Console.WriteLine("[Database] PostgreSQL configuration completed successfully");
             }
             else // Default to SQLite
             {
+                Console.WriteLine("[Database] Using SQLite at: config/kavita.db");
+                
                 options.UseSqlite("Data source=config/kavita.db", builder =>
                 {
                     builder.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);

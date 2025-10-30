@@ -34,7 +34,7 @@ your reading collection with your friends and family!
 - Full Localization Support ([Weblate](https://hosted.weblate.org/engage/kavita/))
 - Ability to download metadata, reviews, ratings, and more (available via [Kavita+](https://wiki.kavitareader.com/kavita+))
 - Epub-based Annotation/Highlight support
-- Database support: SQLite (default) or PostgreSQL for larger deployments ([Setup Guide](POSTGRESQL_SETUP.md)) 
+- Database support: SQLite (default) or PostgreSQL for larger deployments
 
 ## Support
 [![Discord](https://img.shields.io/badge/discord-chat-7289DA.svg?maxAge=60)](https://discord.gg/eczRp9eeem)
